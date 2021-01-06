@@ -49,7 +49,7 @@ configmap:
 
 ingress:
   class: "nginx"
-  host: []
+  #host: "your ingress host"  
   path: /
   serviceName: zipkin-ui
   servicePort: 9411
@@ -58,7 +58,8 @@ storageMethod: cassandra3
 storageClass:
   provisioner: standard
   reclaimPolicy: Delete
-  
+  #parameters:
+  #  type: gp2 
 cassandra:
   username: zipkin
   password: zipkin
