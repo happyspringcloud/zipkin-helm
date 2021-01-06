@@ -23,12 +23,13 @@ metadata:
     release: {{ .Release.Name }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app: {{ template "name" . }}
-provisioner: standard
-reclaimPolicy: Delete
+provisioner: {{ .Values.storageClass.provisioner }}
+reclaimPolicy: {{ .Values.storageClass.reclaimPolicy }}
 volumeBindingMode: Immediate
-#provisioner: kubernetes.io/aws-ebs
-#parameters:
-#  type: gp2
+{{- if .Values.storageClass.parameters }}
+parameters:
+{{ toYaml .Values.storageClass.parameters | indent 2 }}
+{{- end }}
 
 ---
 apiVersion: apps/v1

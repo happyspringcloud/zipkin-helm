@@ -55,7 +55,10 @@ ingress:
   servicePort: 9411
 
 storageMethod: cassandra3
-
+storageClass:
+  provisioner: standard
+  reclaimPolicy: Delete
+  
 cassandra:
   username: zipkin
   password: zipkin
