@@ -27,6 +27,9 @@ $ helm install zipkin -f config.yaml . -n zipkin
 ```
 ![](./img/2021-01-06-17-55-55.png)
 
+모든 pod가 실행된 후에, ingress host로 확인합니다.
+![](./img/2021-01-07-00-51-52.png)
+
 ## 제거   
 ```
 $ helm delete <release name> -n <namespace>
