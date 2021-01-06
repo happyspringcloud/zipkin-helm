@@ -21,6 +21,9 @@ $ kubectl get deploy nfs-client-provisioner -o yaml -n <namespace>
 ```
 $ helm install <release name> . -n <namespace>    
 ex) helm install zipkin . -n zipkin 
+
+만약, config.yaml의 설정을 이용하려면 아래와 같이 하십시오.   
+$ helm install zipkin -f config.yaml . -n zipkin 
 ```
 ![](./img/2021-01-06-17-55-55.png)
 
