@@ -15,6 +15,8 @@ $ vi values.yaml
 values.yaml 파일의 내용을 적절히 수정하세요.  
 sample config 파일은 [config.yaml](https://github.com/happyspringcloud/zipkin-helm/blob/main/config.yaml)을 참조하세요.    
 특히, ingress의 host는 변경하셔야 합니다.   
+또한, NFS Dynamic provisioning을 한 경우 storageClass.provisioner를 아래 명령으로 확인하고 PROVISIONER_NAME의 값과 동일하게 지정하십시오.    
+$ kubectl get deploy nfs-client-provisioner -o yaml -n <namespace>
 
 ```
 $ helm install <release name> . -n <namespace>    
