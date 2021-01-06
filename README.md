@@ -12,7 +12,7 @@ DB는 cassandra를 사용하며, PV는 수동으로 만들거나 dynamic provisi
 $ git clone https://github.com/happyspringcloud/zipkin-helm.git   
 $ cd zipkin-helm   
 $ vi values.yaml   
-내용을 적절히 수정하세요.   
+내용을 적절히 수정하세요.  sample config파일은config.yaml을 참조하세요.    
 특히, ingress의 host는 변경하셔야 합니다.   
 $ helm install <release name> . -n <namespace>    
 ex) helm install zipkin . -n zipkin 
