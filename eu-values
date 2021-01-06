@@ -1,0 +1,593 @@
+[debug] Created tunnel using local port: '52741'
+
+[debug] SERVER: "127.0.0.1:52741"
+
+[debug] Fetched https://financial-times.github.io/zipkin-helm/docs/zipkin-helm-0.6.0.tgz to /Users/milen/.helm/cache/archive/zipkin-helm-0.6.0.tgz
+
+REVISION: 2
+RELEASED: Fri Mar  8 09:44:38 2019
+CHART: zipkin-helm-0.6.0
+USER-SUPPLIED VALUES:
+dependencies:
+  resources:
+    javaOptsHeap: 1300
+    ramMb: 1500
+
+COMPUTED VALUES:
+cassandra:
+  contactPoints: zipkin-cassandra:9042
+  ensureSchema: false
+  image: openzipkin/zipkin-cassandra
+  localdc: datacenter1
+  password: zipkin
+  probeStartupDelay: 120
+  pvSize: 100Gi
+  replicas: 1
+  resources:
+    cpuLimit: 500m
+    cpuRequest: 200m
+    ramMb: 8000
+  tag: 2
+  tolerations:
+  - effect: NoSchedule
+    key: dedicated
+    operator: Equal
+    value: diving
+  username: zipkin
+collector:
+  imageVersion: 2
+  maxReplicaCount: 5
+  probeStartupDelay: 200
+  queryPort: 9411
+  replicaCount: 3
+  resources:
+    cpuLimit: 300m
+    cpuRequest: 80m
+    javaOptsHeap: 700
+    ramMb: 900
+  sampleRate: 0.1
+  targetCPUUtilizationPercentage: 80
+configmap:
+  contactPoints:
+    key: cassandra.contactpoints
+    name: zipkin-storage
+  localdc:
+    key: cassandra.localdc
+    name: zipkin-storage
+  name: zipkin-storage
+  username:
+    key: cassandra.username
+    name: zipkin-storage
+dependencies:
+  cron: 0 22 * * *
+  enabled: true
+  imageVersion: 1.11.0
+  resources:
+    cpuLimit: 200m
+    cpuRequest: 150m
+    javaOptsHeap: 1300
+    ramMb: 1500
+ingress:
+  class: nginx
+  host: zipkin-eu-prod.memb.ft.com
+  path: /
+  serviceName: zipkin-s3o
+  servicePort: 80
+node:
+  cpus: 2
+storageMethod: cassandra3
+ui:
+  imageVersion: 2
+  probeStartupDelay: 300
+  queryPort: 9411
+  replicaCount: 1
+  resources:
+    cpuLimit: 300m
+    cpuRequest: 150m
+    javaOptsHeap: 700
+    ramMb: 900
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: zipkin-helm/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: zipkin
+  labels:
+    heritage: Tiller
+    release: nihilist-seal
+    chart: zipkin-helm-0.6.0
+    app: zipkin-helm
+type: Opaque
+data:
+
+  cassandra.password: emlwa2lu
+---
+# Source: zipkin-helm/templates/configmap.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: zipkin-storage
+  labels:
+    chart: zipkin-helm-0.6.0
+    release: nihilist-seal
+    heritage: Tiller
+data:
+
+
+
+  cassandra.username: "zipkin"
+
+
+
+  cassandra.localdc: "datacenter1"
+
+
+
+  cassandra.contactpoints: "nihilist-seal-zipkin-cassandra:9042"
+---
+# Source: zipkin-helm/templates/storage.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: nihilist-seal-zipkin-cassandra-storage
+  labels:
+    heritage: Tiller
+    release: nihilist-seal
+    chart: zipkin-helm-0.6.0
+    app: zipkin-helm
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+---
+# Source: zipkin-helm/templates/collector-service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: zipkin
+  labels:
+    app: zipkin
+    chart: zipkin-helm-0.6.0
+    component: collector
+    heritage: Tiller
+    release: nihilist-seal
+spec:
+  ports:
+   - port: 9411
+     name: "http"
+     targetPort: 9411
+  selector:
+    app: zipkin-collector
+---
+# Source: zipkin-helm/templates/storage.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nihilist-seal-zipkin-cassandra
+  labels:
+    heritage: Tiller
+    release: nihilist-seal
+    chart: zipkin-helm-0.6.0
+    app: zipkin-helm
+spec:
+  ports:
+  - port: 9042
+  clusterIP: None
+  selector:
+    app: zipkin-cassandra
+---
+# Source: zipkin-helm/templates/ui-service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: zipkin-ui
+  labels:
+      app: zipkin-ui
+spec:
+  ports:
+   - port: 9411
+     name: "http"
+     targetPort: 9411
+  selector:
+    app: zipkin-ui
+---
+# Source: zipkin-helm/templates/zipkin-collector.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nihilist-seal-zipkin-collector
+  labels:
+    app: zipkin-collector
+    chart: zipkin-helm-0.6.0
+    release: nihilist-seal
+    heritage: Tiller
+spec:
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: zipkin-collector
+        release: nihilist-seal
+    spec:
+      containers:
+        - name: zipkin-helm
+          image: "docker.io/openzipkin/zipkin:2"
+          ports:
+            - containerPort: 9411
+          livenessProbe:
+            initialDelaySeconds: 200
+            tcpSocket:
+              port: 9411
+          readinessProbe:
+            initialDelaySeconds: 200
+            httpGet:
+              path: /health
+              port: 9411
+          resources:
+            limits:
+              cpu: "300m"
+              memory: "900Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+            requests:
+              cpu: "80m"
+              memory: "900Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: QUERY_PORT
+              value: "9411"
+            - name: JAVA_OPTS
+              value: "-XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Xms700M -Xmx700M -XX:+UseG1GC -server"
+            - name: COLLECTOR_SAMPLE_RATE
+              value: "0.1"
+            - name: QUERY_ENABLED
+              value: "false"
+            - name: STORAGE_TYPE
+              value: "cassandra3"
+
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.username
+            - name: CASSANDRA_CONTACT_POINTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.contactpoints
+            - name: CASSANDRA_LOCAL_DC
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.localdc
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zipkin
+                  key: cassandra.password
+            - name: CASSANDRA_ENSURE_SCHEMA
+              value: "false"
+---
+# Source: zipkin-helm/templates/zipkin-ui.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nihilist-seal-zipkin-ui
+  labels:
+    app: nihilist-seal-zipkin-ui
+    chart: zipkin-helm-0.6.0
+    release: nihilist-seal
+    heritage: Tiller
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 2
+  template:
+    metadata:
+      labels:
+        app: zipkin-ui
+        release: nihilist-seal
+    spec:
+      containers:
+        - name: zipkin-helm
+          image: "docker.io/openzipkin/zipkin:2"
+          ports:
+            - containerPort: 9411
+          livenessProbe:
+            initialDelaySeconds: 300
+            tcpSocket:
+              port: 9411
+          readinessProbe:
+            initialDelaySeconds: 300
+            httpGet:
+              path: /health
+              port: 9411
+          resources:
+            limits:
+              cpu: "300m"
+              memory: "900Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+            requests:
+              cpu: "150m"
+              memory: "900Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: QUERY_PORT
+              value: "9411"
+            - name: JAVA_OPTS
+              value: "-XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Xms700M -Xmx700M -XX:+UseG1GC -server"
+            - name: QUERY_ENABLED
+              value: "true"
+            - name: STORAGE_TYPE
+              value: "cassandra3"
+
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.username
+            - name: CASSANDRA_CONTACT_POINTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.contactpoints
+            - name: CASSANDRA_LOCAL_DC
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.localdc
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zipkin
+                  key: cassandra.password
+            - name: CASSANDRA_ENSURE_SCHEMA
+              value: "false"
+---
+# Source: zipkin-helm/templates/storage.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nihilist-seal-zipkin-cassandra
+  labels:
+    heritage: Tiller
+    release: nihilist-seal
+    chart: zipkin-helm-0.6.0
+    app: zipkin-cassandra
+spec:
+  serviceName: zipkin-cassandra
+  replicas: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: data-storage
+    spec:
+      storageClassName: nihilist-seal-zipkin-cassandra-storage
+      accessModes:
+       - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Gi
+  template:
+    metadata:
+      labels:
+        app: zipkin-cassandra
+        heritage: Tiller
+        release: nihilist-seal
+        chart: zipkin-helm-0.6.0
+    spec:
+      initContainers:
+      - name: volume-mount-hack
+        image: busybox
+        command: ["sh", "-c", "chmod -R 777 /cassandra/"]
+        volumeMounts:
+        - name: data-storage
+          mountPath: /cassandra/data
+      imagePullSecrets:
+        - name: nexusregistrykey
+      containers:
+      - name: zipkin-cassandra
+        image: openzipkin/zipkin-cassandra:2
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "PID=$(pidof java) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
+        ports:
+        - containerPort: 9042
+        livenessProbe:
+          initialDelaySeconds: 120
+          tcpSocket:
+            port: 9042
+        readinessProbe:
+          initialDelaySeconds: 120
+          tcpSocket:
+            port: 9042
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "8000Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+          requests:
+            cpu: "200m"
+            memory: "8000Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+        volumeMounts:
+          - name: data-storage
+            mountPath: /cassandra/data
+---
+# Source: zipkin-helm/templates/dependencies-cron.yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: nihilist-seal-zipkin-dependencies-gen
+  labels:
+    app: zipkin-dependencies-gen
+    chart: zipkin-helm-0.6.0
+    release: nihilist-seal
+    heritage: Tiller
+spec:
+  schedule: "0 22 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: zipkin-dependencies-gen
+            release: nihilist-seal
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: zipkin-dependencies-gen
+            image: "openzipkin/zipkin-dependencies:1.11.0"
+            env:
+            - name: STORAGE_TYPE
+              value: "cassandra3"
+
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.username
+            - name: CASSANDRA_CONTACT_POINTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.contactpoints
+            - name: CASSANDRA_LOCAL_DC
+              valueFrom:
+                configMapKeyRef:
+                  name: zipkin-storage
+                  key: cassandra.localdc
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zipkin
+                  key: cassandra.password
+            - name: CASSANDRA_ENSURE_SCHEMA
+              value: "false"
+
+            - name: JAVA_OPTS
+              value: "-XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Xms1300M -Xmx1300M -XX:+UseG1GC -server"
+            resources:
+              limits:
+                cpu: "200m"
+                memory: "1500Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+              requests:
+                cpu: "150m"
+                memory: "1500Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+---
+# Source: zipkin-helm/templates/ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: zipkin
+  labels:
+    app: zipkin
+    chart: zipkin-helm-0.6.0
+    release: nihilist-seal
+    heritage: Tiller
+  annotations:
+      kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: zipkin-eu-prod.memb.ft.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: zipkin-s3o
+          servicePort: 80
+---
+# Source: zipkin-helm/templates/hpa.yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: zipkin-collector
+  labels:
+    heritage: Tiller
+    release: nihilist-seal
+    chart: zipkin-helm-0.6.0
+    app: zipkin-helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: zipkin-collector
+  minReplicas: 3
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+Release "nihilist-seal" has been upgraded. Happy Helming!
+LAST DEPLOYED: Tue Apr 17 17:20:36 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ConfigMap
+NAME            DATA  AGE
+zipkin-storage  3     324d
+
+==> v1/StorageClass
+NAME                                    PROVISIONER
+nihilist-seal-zipkin-cassandra-storage  kubernetes.io/aws-ebs
+
+==> v1/Service
+NAME                            TYPE       CLUSTER-IP  EXTERNAL-IP  PORT(S)   AGE
+zipkin                          ClusterIP  10.1.0.16   <none>       9411/TCP  324d
+nihilist-seal-zipkin-cassandra  ClusterIP  None        <none>       9042/TCP  324d
+zipkin-ui                       ClusterIP  10.1.0.179  <none>       9411/TCP  324d
+
+==> v1beta1/CronJob
+NAME                                   SCHEDULE      SUSPEND  ACTIVE  LAST SCHEDULE  AGE
+nihilist-seal-zipkin-dependencies-gen  30 */5 * * *  False    1       Wed, 27 Feb 2019 00:30:00 +0000
+
+==> v1/Pod(related)
+NAME                                             READY  STATUS   RESTARTS  AGE
+nihilist-seal-zipkin-collector-77d58d78cb-j2lh4  1/1    Running  0         9d
+nihilist-seal-zipkin-collector-77d58d78cb-nqvkk  1/1    Running  0         9d
+nihilist-seal-zipkin-collector-77d58d78cb-q9pgl  1/1    Running  0         9d
+nihilist-seal-zipkin-ui-78647846f7-49stz         1/1    Running  0         9d
+
+==> v1/Secret
+NAME    TYPE    DATA  AGE
+zipkin  Opaque  1     324d
+
+==> v1beta1/StatefulSet
+NAME                            DESIRED  CURRENT  AGE
+nihilist-seal-zipkin-cassandra  1        1        324d
+
+==> v1beta1/Ingress
+NAME    HOSTS                       ADDRESS  PORTS  AGE
+zipkin  zipkin-eu-prod.memb.ft.com  80       324d
+
+==> v1/HorizontalPodAutoscaler
+NAME              REFERENCE                    TARGETS          MINPODS  MAXPODS  REPLICAS  AGE
+zipkin-collector  Deployment/zipkin-collector  <unknown> / 80%  3        5        0         324d
+
+==> v1beta1/Deployment
+NAME                            DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+nihilist-seal-zipkin-collector  3        3        3           3          324d
+nihilist-seal-zipkin-ui         1        1        1           1          324d
+
+
+NOTES:
+Thank you for installing zipkin-helm.
+
+Your release is named nihilist-seal.
+
+To learn more about the release, try:
+
+  $ helm status nihilist-seal
+  $ helm get nihilist-seal
