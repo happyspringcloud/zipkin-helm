@@ -17,6 +17,7 @@ $ vi values.yaml
 $ helm install <release name> . -n <namespace>    
 ex) helm install zipkin . -n zipkin 
 ```
+![](./img/2021-01-06-17-55-55.png)
 
 ## 제거   
 ```
