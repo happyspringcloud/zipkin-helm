@@ -14,7 +14,7 @@ $ cd zipkin-helm
 $ vi values.yaml   
 ```
 values.yaml 파일의 내용을 적절히 수정하세요.  
-sample config 파일은[config.yaml](https://github.com/happyspringcloud/zipkin-helm/blob/main/config.yaml)을 참조하세요.    
+sample config 파일은 [config.yaml](https://github.com/happyspringcloud/zipkin-helm/blob/main/config.yaml)을 참조하세요.    
 특히, ingress의 host는 변경하셔야 합니다.   
 
 ```
