@@ -2,22 +2,36 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: zipkin
-  labels:
-    app: zipkin
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
   annotations:
       kubernetes.io/ingress.class: "{{ .Values.ingress.class }}"
 spec:
   rules:
-  - host: {{ .Values.ingress.host }}
+  - host: {{ .Values.ingress.collector.host }}
     http:
       paths:
-      - path: {{ .Values.ingress.path }}
+      - path: {{ .Values.ingress.collector.path }}
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.ingress.serviceName }}
+            name: {{ .Values.ingress.collector.serviceName }}
             port:
-              number: {{ .Values.ingress.servicePort }}
+              number: {{ .Values.ingress.collector.servicePort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zipkin-ui
+  annotations:
+      kubernetes.io/ingress.class: "{{ .Values.ingress.class }}"
+spec:
+  rules:
+  - host: {{ .Values.ingress.ui.host }}
+    http:
+      paths:
+      - path: {{ .Values.ingress.ui.path }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.ingress.ui.serviceName }}
+            port:
+              number: {{ .Values.ingress.ui.servicePort }}

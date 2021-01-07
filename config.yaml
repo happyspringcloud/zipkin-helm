@@ -49,10 +49,16 @@ configmap:
 
 ingress:
   class: "nginx"
-  host: zipkin.169.56.84.41.nip.io
-  path: /
-  serviceName: zipkin-ui
-  servicePort: 9411
+  collector:
+    host: zipkin.169.56.84.41.nip.io
+    path: / 
+    serviceName: zipkin 
+    servicePort: 9411
+  ui: 
+    host: zipkin-ui.169.56.84.41.nip.io
+    path: /
+    serviceName: zipkin-ui
+    servicePort: 9411
 
 storageMethod: cassandra3
 storageClass:
