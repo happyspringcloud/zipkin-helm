@@ -64,8 +64,8 @@ storageMethod: cassandra3
 storageClass:
   provisioner: standard
   reclaimPolicy: Delete
-  parameters:
-    type: gp2
+  #parameters:
+  #  type: gp2
     
 cassandra:
   username: zipkin
